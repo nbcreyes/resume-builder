@@ -1,7 +1,24 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const Groq = require("groq-sdk");
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+const safeParseJSON = (text) => {
+  const clean = text.replace(/```json|```/g, "").trim();
+  try {
+    return JSON.parse(clean);
+  } catch {
+    throw new Error("AI returned malformed response. Please try again.");
+  }
+};
+
+const chat = async (prompt) => {
+  const response = await groq.chat.completions.create({
+    model: "llama-3.3-70b-versatile",
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.7,
+  });
+  return response.choices[0].message.content;
+};
 
 const generateResumeContent = async (rawData) => {
   const prompt = `
@@ -36,10 +53,8 @@ Return this exact JSON structure:
 }
 `;
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text();
-  const clean = text.replace(/```json|```/g, "").trim();
-  return JSON.parse(clean);
+  const text = await chat(prompt);
+  return safeParseJSON(text);
 };
 
 const generateCoverLetter = async (resumeData, jobTitle, company) => {
@@ -59,8 +74,7 @@ Resume data:
 ${JSON.stringify(resumeData, null, 2)}
 `;
 
-  const result = await model.generateContent(prompt);
-  return result.response.text().trim();
+  return await chat(prompt);
 };
 
 const analyzeATS = async (resumeData) => {
@@ -94,10 +108,8 @@ Return this exact JSON structure:
 }
 `;
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text();
-  const clean = text.replace(/```json|```/g, "").trim();
-  return JSON.parse(clean);
+  const text = await chat(prompt);
+  return safeParseJSON(text);
 };
 
 const matchJobDescription = async (resumeData, jobDescription) => {
@@ -130,10 +142,41 @@ Return this exact JSON structure:
 }
 `;
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text();
-  const clean = text.replace(/```json|```/g, "").trim();
-  return JSON.parse(clean);
+  const text = await chat(prompt);
+  return safeParseJSON(text);
 };
 
-module.exports = { generateResumeContent, generateCoverLetter, analyzeATS, matchJobDescription };
+const generateInterviewQuestions = async (resumeData, jobTitle) => {
+  const prompt = `
+You are a senior technical interviewer and career coach.
+
+Based on the following resume and target job title, generate a set of likely interview questions the candidate should prepare for.
+
+Rules:
+- Mix of behavioral, technical, and situational questions
+- Questions should be specific to their experience and the job title
+- Include a brief note on what the interviewer is looking for with each question
+- Return only valid JSON, no markdown, no explanation
+
+Resume data:
+${JSON.stringify(resumeData, null, 2)}
+
+Target job title: ${jobTitle}
+
+Return this exact JSON structure:
+{
+  "questions": [
+    {
+      "category": "Technical",
+      "question": "the interview question",
+      "hint": "what the interviewer is looking for"
+    }
+  ]
+}
+`;
+
+  const text = await chat(prompt);
+  return safeParseJSON(text);
+};
+
+module.exports = { generateResumeContent, generateCoverLetter, analyzeATS, matchJobDescription, generateInterviewQuestions };

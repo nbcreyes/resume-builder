@@ -6,6 +6,7 @@ const {
   generateCoverLetterHandler,
   analyzeATSHandler,
   matchJobHandler,
+  generateInterviewQuestionsHandler,
 } = require("../controllers/aiController");
 
 router.use(auth);
@@ -14,5 +15,6 @@ router.post("/resume/:id/generate", generateResume);
 router.post("/cover-letter", generateCoverLetterHandler);
 router.post("/resume/:id/ats", analyzeATSHandler);
 router.post("/job-match", matchJobHandler);
+router.post("/interview-questions", generateInterviewQuestionsHandler);
 
 module.exports = router;
