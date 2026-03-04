@@ -14,7 +14,7 @@ connectDB();
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://resume-builder-theta-orcin-36.vercel.app/"
+    "https://resume-builder-theta-orcin-36.vercel.app"
   ],
   credentials: true,
 }));
