@@ -11,7 +11,13 @@ const app = express();
 
 connectDB();
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://resume-builder-theta-orcin-36.vercel.app/"
+  ],
+  credentials: true,
+}));
 app.use(express.json());
 
 app.get("/api/health", (req, res) => {
